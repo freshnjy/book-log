@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>독서 기록</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1209;
+    --paper: #faf6ee;
+    --paper-dark: #f0e8d8;
+    --amber: #c8893a;
+    --amber-light: #e8b86a;
+    --rust: #8b3a1a;
+    --sage: #5c7a5a;
+    --line: rgba(26,18,9,0.12);
+    --shadow: rgba(26,18,9,0.15);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--paper);
+    font-family: 'Noto Sans KR', sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Paper texture background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent: 27px,
+        rgba(180,140,80,0.07) 28px
+      );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Decorative spine on left */
+  body::after {
+    content: '';
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 6px;
+    background: linear-gradient(180deg, var(--rust) 0%, var(--amber) 50%, var(--rust) 100%);
+    z-index: 10;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 20px 40px 26px;
+  }
+
+  /* Header */
+  .header {
+    padding: 32px 0 20px;
+    border-bottom: 2px solid var(--amber);
+    margin-bottom: 28px;
+    position: relative;
+  }
+
+  .header-label {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--amber);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .header h1 {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+
+  .header h1 span {
+    color: var(--rust);
+  }
+
+  .header-date {
+    position: absolute;
+    right: 0;
+    top: 32px;
+    font-size: 11px;
+    color: var(--amber);
+    font-family: 'Noto Serif KR', serif;
+    text-align: right;
+    line-height: 1.6;
+  }
+
+  /* Field groups */
+  .field {
+    margin-bottom: 22px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .field:nth-child(1) { animation-delay: 0.05s; }
+  .field:nth-child(2) { animation-delay: 0.1s; }
+  .field:nth-child(3) { animation-delay: 0.15s; }
+  .field:nth-child(4) { animation-delay: 0.2s; }
+  .field:nth-child(5) { animation-delay: 0.25s; }
+  .field:nth-child(6) { animation-delay: 0.3s; }
+  .field:nth-child(7) { animation-delay: 0.35s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 2px;
+    color: var(--amber);
+    margin-bottom: 7px;
+    text-transform: uppercase;
+  }
+
+  label .req {
+    color: var(--rust);
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  input[type="text"],
+  input[type="date"],
+  input[type="url"],
+  textarea,
+  select {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    padding: 8px 4px 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    border-radius: 0;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-bottom-color: var(--amber);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: rgba(26,18,9,0.3);
+    font-size: 14px;
+  }
+
+  textarea {
+    resize: none;
+    line-height: 1.7;
+    min-height: 80px;
+  }
+
+  select {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23c8893a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    padding-right: 24px;
+  }
+
+  /* Star rating */
+  .star-group {
+    display: flex;
+    gap: 6px;
+    padding: 6px 0;
+  }
+
+  .star-group input[type="radio"] { display: none; }
+
+  .star-group label {
+    font-size: 28px;
+    cursor: pointer;
+    color: var(--paper-dark);
+    transition: color 0.15s, transform 0.1s;
+    margin: 0;
+    padding: 0;
+    letter-spacing: 0;
+    text-transform: none;
+    line-height: 1;
+  }
+
+  .star-group input[type="radio"]:checked ~ label,
+  .star-group label:hover,
+  .star-group label:hover ~ label {
+    color: var(--paper-dark);
+  }
+
+  .star-group label:hover {
+    transform: scale(1.2);
+  }
+
+  /* RTL trick for star hover */
+  .star-group {
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+  }
+
+  .star-group label:hover,
+  .star-group label:hover ~ label {
+    color: var(--amber-light) !important;
+  }
+
+  .star-group input[type="radio"]:checked + label,
+  .star-group input[type="radio"]:checked + label ~ label {
+    color: var(--amber) !important;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, var(--amber) 0%, transparent 100%);
+    margin: 28px 0;
+    opacity: 0.4;
+  }
+
+  /* Section title */
+  .section-title {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 13px;
+    color: var(--rust);
+    margin-bottom: 18px;
+    letter-spacing: 1px;
+  }
+
+  /* Quote box */
+  .quote-wrap {
+    position: relative;
+    padding-left: 16px;
+  }
+
+  .quote-wrap::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 8px; bottom: 8px;
+    width: 2px;
+    background: var(--amber);
+    border-radius: 1px;
+  }
+
+  .quote-wrap textarea {
+    min-height: 100px;
+    font-style: italic;
+  }
+
+  /* Add more quotes */
+  .add-quote-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: 1px dashed var(--amber);
+    border-radius: 4px;
+    color: var(--amber);
+    font-size: 12px;
+    font-family: 'Noto Sans KR', sans-serif;
+    letter-spacing: 1px;
+    padding: 9px 16px;
+    cursor: pointer;
+    width: 100%;
+    justify-content: center;
+    margin-top: 10px;
+    transition: background 0.2s;
+  }
+
+  .add-quote-btn:hover { background: rgba(200,137,58,0.06); }
+
+  .add-quote-btn::before { content: '+'; font-size: 16px; }
+
+  .quotes-container { display: flex; flex-direction: column; gap: 14px; }
+
+  .quote-item {
+    position: relative;
+    animation: fadeUp 0.3s ease both;
+  }
+
+  .remove-quote {
+    position: absolute;
+    top: 2px; right: 0;
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: rgba(26,18,9,0.25);
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 4px;
+  }
+
+  .remove-quote:hover { color: var(--rust); }
+
+  /* Submit button */
+  .submit-wrap {
+    margin-top: 36px;
+    animation: fadeUp 0.4s ease 0.4s both;
+  }
+
+  .submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    font-family: 'Noto Serif KR', serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.2s;
+  }
+
+  .submit-btn::after {
+    content: '';
+    position: absolute;
+    left: 0; bottom: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--rust), var(--amber), var(--rust));
+  }
+
+  .submit-btn:hover { background: #2d2010; }
+
+  .submit-btn:active { transform: scale(0.99); }
+
+  /* Success state */
+  .success-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--paper);
+    z-index: 100;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .success-overlay.show { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .success-icon {
+    font-size: 56px;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  .success-text {
+    font-family: 'Noto Serif KR', serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .success-sub {
+    font-size: 13px;
+    color: var(--amber);
+    letter-spacing: 2px;
+  }
+
+  .success-again {
+    margin-top: 20px;
+    background: none;
+    border: 1.5px solid var(--ink);
+    padding: 12px 32px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink);
+    letter-spacing: 2px;
+  }
+
+  /* Char counter */
+  .char-info {
+    font-size: 11px;
+    color: rgba(26,18,9,0.3);
+    text-align: right;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header class="header">
+    <span class="header-label">Reading Log</span>
+    <h1>나의 <span>독서</span> 기록</h1>
+    <div class="header-date" id="todayDate"></div>
+  </header>
+
+  <div id="formArea">
+
+    <!-- 책 제목 -->
+    <div class="field">
+      <label>책 제목 <span class="req">*</span></label>
+      <input type="text" id="title" placeholder="읽은 책 제목을 입력하세요" required>
+    </div>
+
+    <!-- 저자 -->
+    <div class="field">
+      <label>저자</label>
+      <input type="text" id="author" placeholder="저자명">
+    </div>
+
+    <!-- 완독일 -->
+    <div class="field">
+      <label>완독일 <span class="req">*</span></label>
+      <input type="date" id="finishDate" required>
+    </div>
+
+    <!-- 장르 -->
+    <div class="field">
+      <label>장르</label>
+      <select id="genre">
+        <option value="">선택하세요</option>
+        <option>소설</option>
+        <option>에세이</option>
+        <option>자기계발</option>
+        <option>경제/경영</option>
+        <option>역사</option>
+        <option>과학/기술</option>
+        <option>철학/심리</option>
+        <option>시/문학</option>
+        <option>기타</option>
+      </select>
+    </div>
+
+    <!-- 별점 -->
+    <div class="field">
+      <label>별점</label>
+      <div class="star-group" id="starGroup">
+        <input type="radio" name="rating" id="s5" value="5">
+        <label for="s5">★</label>
+        <input type="radio" name="rating" id="s4" value="4">
+        <label for="s4">★</label>
+        <input type="radio" name="radio" id="s3" value="3">
+        <label for="s3">★</label>
+        <input type="radio" name="rating" id="s2" value="2">
+        <label for="s2">★</label>
+        <input type="radio" name="rating" id="s1" value="1">
+        <label for="s1">★</label>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 한줄 서평 -->
+    <p class="section-title">📝 감상</p>
+
+    <div class="field">
+      <label>한줄 서평 <span class="req">*</span></label>
+      <input type="text" id="summary" placeholder="이 책을 한 문장으로 표현하면?" maxlength="100">
+      <div class="char-info"><span id="summaryCount">0</span>/100</div>
+    </div>
+
+    <!-- 상세 감상 -->
+    <div class="field">
+      <label>상세 감상</label>
+      <textarea id="review" placeholder="책을 읽고 느낀 점, 기억하고 싶은 생각들을 자유롭게 적어보세요..." rows="4"></textarea>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 좋은 문장 -->
+    <p class="section-title">✍️ 밑줄 문장</p>
+
+    <div class="quotes-container" id="quotesContainer">
+      <div class="quote-item">
+        <div class="quote-wrap">
+          <label>문장 1</label>
+          <textarea class="quote-input" placeholder="마음에 담아두고 싶은 문장을 적어주세요..." rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <button class="add-quote-btn" onclick="addQuote()">문장 추가</button>
+
+    <!-- Submit -->
+    <div class="submit-wrap">
+      <button class="submit-btn" onclick="handleSubmit()">노션에 저장하기</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Success overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-icon">📚</div>
+  <div class="success-text">기록 완료!</div>
+  <div class="success-sub">SAVED TO NOTION</div>
+  <button class="success-again" onclick="resetForm()">다른 책 기록하기</button>
+</div>
+
+<script>
+  // Today's date display
+  const now = new Date();
+  const days = ['일','월','화','수','목','금','토'];
+  document.getElementById('todayDate').innerHTML =
+    `${now.getFullYear()}년<br>${now.getMonth()+1}월 ${now.getDate()}일 ${days[now.getDay()]}요일`;
+
+  // Set today as default for finish date
+  document.getElementById('finishDate').value = now.toISOString().split('T')[0];
+
+  // Star rating fix (name typo fix)
+  document.getElementById('s3').name = 'rating';
+
+  // Char counter
+  document.getElementById('summary').addEventListener('input', function() {
+    document.getElementById('summaryCount').textContent = this.value.length;
+  });
+
+  // Add quote
+  let quoteCount = 1;
+  function addQuote() {
+    quoteCount++;
+    const container = document.getElementById('quotesContainer');
+    const div = document.createElement('div');
+    div.className = 'quote-item';
+    div.innerHTML = `
+      <button class="remove-quote" onclick="this.parentElement.remove()">×</button>
+      <div class="quote-wrap">
+        <label>문장 ${quoteCount}</label>
+        <textarea class="quote-input" placeholder="마음에 담아두고 싶은 문장을 적어주세요..." rows="3"></textarea>
+      </div>
+    `;
+    container.appendChild(div);
+    div.querySelector('textarea').focus();
+  }
+
+  // Submit handler
+  function handleSubmit() {
+    const title = document.getElementById('title').value.trim();
+    const finishDate = document.getElementById('finishDate').value;
+    const summary = document.getElementById('summary').value.trim();
+
+    if (!title) { alert('책 제목을 입력해주세요.'); document.getElementById('title').focus(); return; }
+    if (!finishDate) { alert('완독일을 선택해주세요.'); return; }
+    if (!summary) { alert('한줄 서평을 입력해주세요.'); document.getElementById('summary').focus(); return; }
+
+    const ratingVal = document.querySelector('input[name="rating"]:checked')?.value || '';
+    const rating = ratingVal ? '⭐'.repeat(parseInt(ratingVal)) : '';
+    const quotes = [...document.querySelectorAll('.quote-input')]
+      .map(t => t.value.trim()).filter(Boolean);
+
+    const payload = {
+      title,
+      author: document.getElementById('author').value.trim(),
+      finishDate,
+      genre: document.getElementById('genre').value,
+      rating,
+      summary,
+      review: document.getElementById('review').value.trim(),
+      quotes,
+    };
+
+    console.log('전송 데이터:', payload);
+
+    // TODO: 실제 Make Webhook URL로 교체
+    const WEBHOOK_URL = 'https://hook.us2.make.com/viy8e08xsfcn4vtp9vnb9gao1qgebril';
+
+    fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(r => { if (r.ok) showSuccess(); else alert('저장 실패. 다시 시도해주세요.'); })
+    .catch(() => alert('연결 오류가 발생했습니다.'));
+  }
+
+  function showSuccess() {
+    document.getElementById('successOverlay').classList.add('show');
+  }
+
+  function resetForm() {
+    document.getElementById('successOverlay').classList.remove('show');
+    document.getElementById('title').value = '';
+    document.getElementById('author').value = '';
+    document.getElementById('finishDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('genre').value = '';
+    document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
+    document.getElementById('summary').value = '';
+    document.getElementById('summaryCount').textContent = '0';
+    document.getElementById('review').value = '';
+    document.getElementById('quotesContainer').innerHTML = `
+      <div class="quote-item">
+        <div class="quote-wrap">
+          <label>문장 1</label>
+          <textarea class="quote-input" placeholder="마음에 담아두고 싶은 문장을 적어주세요..." rows="3"></textarea>
+        </div>
+      </div>
+    `;
+    quoteCount = 1;
+    window.scrollTo(0,0);
+  }
+</script>
+</body>
+</html>
