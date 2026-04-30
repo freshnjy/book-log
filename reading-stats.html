@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나의 독서 통계</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.06);
+    --gold: #c9a84c;
+    --gold-dim: rgba(201,168,76,0.15);
+    --text: #e8e0d0;
+    --muted: rgba(232,224,208,0.4);
+    --accent: #e85d3a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Noto Sans KR', sans-serif; min-height: 100vh; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+  .header { margin-bottom: 48px; }
+  .header-eyebrow { font-size: 11px; letter-spacing: 5px; color: var(--gold); text-transform: uppercase; margin-bottom: 12px; }
+  .header h1 { font-family: 'Playfair Display', serif; font-size: clamp(32px, 5vw, 52px); font-weight: 700; line-height: 1.1; }
+  .header h1 em { font-style: italic; color: var(--gold); }
+  .header-sub { margin-top: 12px; font-size: 13px; color: var(--muted); letter-spacing: 1px; }
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 300px; gap: 16px; color: var(--muted); font-size: 13px; letter-spacing: 2px; }
+  .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); padding: 24px 20px; position: relative; overflow: hidden; animation: fadeUp 0.5s ease both; }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--gold), transparent); }
+  .stat-number { font-family: 'Playfair Display', serif; font-size: clamp(28px, 4vw, 44px); font-weight: 700; color: var(--gold); line-height: 1; margin-bottom: 8px; }
+  .stat-label { font-size: 11px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+  .section { margin-bottom: 40px; animation: fadeUp 0.5s ease both; }
+  .section-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 20px; }
+  .section-desc { font-size: 11px; color: var(--muted); letter-spacing: 1px; }
+  .yearly-chart { display: flex; align-items: flex-end; gap: 8px; height: 160px; padding-bottom: 28px; position: relative; }
+  .yearly-chart::after { content: ''; position: absolute; bottom: 28px; left: 0; right: 0; height: 1px; background: var(--border); }
+  .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; background: var(--gold-dim); border: 1px solid rgba(201,168,76,0.3); border-bottom: none; position: relative; min-height: 4px; transition: background 0.2s; cursor: default; }
+  .bar:hover { background: rgba(201,168,76,0.35); }
+  .bar.highlight { background: rgba(201,168,76,0.4); border-color: var(--gold); }
+  .bar-val { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--gold); white-space: nowrap; opacity: 0; transition: opacity 0.2s; }
+  .bar:hover .bar-val { opacity: 1; }
+  .bar-year { font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+  .line-wrap { background: var(--surface); border: 1px solid var(--border); padding: 24px; }
+  .line-chart { width: 100%; height: 120px; overflow: visible; }
+  .genre-list { display: flex; flex-direction: column; gap: 10px; }
+  .genre-row { display: grid; grid-template-columns: 140px 1fr 40px; align-items: center; gap: 12px; }
+  .genre-name { font-size: 12px; color: var(--muted); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .genre-track { height: 6px; background: var(--surface2); }
+  .genre-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--accent)); transform-origin: left; animation: growWidth 1s ease both; }
+  @keyframes growWidth { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+  .genre-count { font-size: 12px; color: var(--gold); font-weight: 500; text-align: right; }
+  .monthly-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; }
+  .month-cell { aspect-ratio: 1; border-radius: 2px; position: relative; cursor: default; transition: transform 0.15s; }
+  .month-cell:hover { transform: scale(1.15); z-index: 2; }
+  .month-tooltip { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--surface2); border: 1px solid var(--border); padding: 4px 8px; font-size: 10px; color: var(--text); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 10; }
+  .month-cell:hover .month-tooltip { opacity: 1; }
+  .footer-note { text-align: center; font-size: 11px; color: var(--muted); letter-spacing: 2px; margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  @media (max-width: 600px) {
+    .stats-row { grid-template-columns: 1fr; }
+    .genre-row { grid-template-columns: 90px 1fr 32px; }
+    .monthly-grid { grid-template-columns: repeat(6, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="header">
+    <div class="header-eyebrow">Reading Statistics</div>
+    <h1>나의 <em>독서</em> 기록</h1>
+    <p class="header-sub" id="headerSub">데이터 불러오는 중...</p>
+  </header>
+  <div id="loadingArea" class="loading">
+    <div class="spinner"></div>
+    <span>노션에서 데이터 불러오는 중</span>
+  </div>
+  <div id="mainContent" style="display:none">
+    <div class="stats-row" id="statsRow"></div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">연도별 완독</span><span class="section-desc">YEARLY OVERVIEW</span></div>
+      <div class="yearly-chart" id="yearlyChart"></div>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">월별 추이</span><span class="section-desc">RECENT 24 MONTHS</span></div>
+      <div class="line-wrap"><svg class="line-chart" id="lineChart" viewBox="0 0 800 120" preserveAspectRatio="none"></svg></div>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">장르별 분포</span><span class="section-desc">BY GENRE</span></div>
+      <div class="genre-list" id="genreList"></div>
+    </div>
+    <div class="section">
+      <div class="section-header"><span class="section-title">월별 히트맵</span><span class="section-desc">MONTHLY HEATMAP</span></div>
+      <div class="monthly-grid" id="heatmap"></div>
+    </div>
+    <div class="footer-note" id="footerNote">노션 Reading Log 실시간 연동 · 완독 기준</div>
+  </div>
+</div>
+<script>
+const NOTION_TOKEN = 'ntn_f49908473542Atg7BGyOVGr2mcIWImUHbODRwwMWglG2Lt';
+const DB_ID = '3511297a497a808a94aac618003e441b';
+const PROXY = 'https://api.allorigins.win/raw?url=';
+
+async function fetchAllPages() {
+  let results = [], cursor = null;
+  do {
+    const body = { page_size: 100, filter: { property: '독서 상태', select: { equals: '완독' } } };
+    if (cursor) body.start_cursor = cursor;
+    const url = encodeURIComponent(`https://api.notion.com/v1/databases/${DB_ID}/query`);
+    const res = await fetch(PROXY + url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-allorigins-headers': JSON.stringify({
+          'Authorization': `Bearer ${NOTION_TOKEN}`,
+          'Notion-Version': '2022-06-28',
+          'Content-Type': 'application/json'
+        })
+      },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    results = results.concat(data.results || []);
+    cursor = data.has_more ? data.next_cursor : null;
+  } while (cursor);
+  return results;
+}
+
+async function init() {
+  try {
+    const pages = await fetchAllPages();
+    const total = pages.length;
+    const yearly = {}, monthly = {}, genres = {};
+
+    pages.forEach(p => {
+      const d = p.properties['완독일']?.date?.start;
+      const g = p.properties['장르']?.select?.name;
+      if (d) {
+        const y = d.slice(0, 4);
+        const m = d.slice(0, 7).replace('-', '');
+        yearly[y] = (yearly[y] || 0) + 1;
+        monthly[m] = (monthly[m] || 0) + 1;
+      }
+      if (g) genres[g] = (genres[g] || 0) + 1;
+    });
+
+    const years = Object.keys(yearly).sort();
+    const avgPerYear = Math.round(total / years.length);
+    const bestYear = years.reduce((a, b) => yearly[a] > yearly[b] ? a : b);
+
+    document.getElementById('headerSub').textContent =
+      `${years[0]} — ${years[years.length-1]} · 총 ${total}권의 여정`;
+
+    // Stats
+    [
+      { num: total, label: '총 완독권수' },
+      { num: `~${avgPerYear}`, label: '연평균 독서량' },
+      { num: bestYear, label: `최다 독서 (${yearly[bestYear]}권)` },
+    ].forEach((s, i) => {
+      const el = document.createElement('div');
+      el.className = 'stat-card';
+      el.style.animationDelay = `${i * 0.08}s`;
+      el.innerHTML = `<div class="stat-number">${s.num}</div><div class="stat-label">${s.label}</div>`;
+      document.getElementById('statsRow').appendChild(el);
+    });
+
+    // Yearly bars
+    const maxY = Math.max(...Object.values(yearly));
+    const chartEl = document.getElementById('yearlyChart');
+    years.forEach(year => {
+      const val = yearly[year];
+      const div = document.createElement('div');
+      div.className = 'bar-group';
+      div.innerHTML = `<div class="bar ${val === maxY ? 'highlight' : ''}" style="height:${(val/maxY*100)}%"><span class="bar-val">${val}권</span></div><span class="bar-year">${year.slice(2)}</span>`;
+      chartEl.appendChild(div);
+    });
+
+    // Line chart
+    const allMonths = Object.keys(monthly).sort();
+    const recent24 = allMonths.slice(-24).map(m => [m, monthly[m]]);
+    const svg = document.getElementById('lineChart');
+    const vals = recent24.map(m => m[1]);
+    const maxM = Math.max(...vals), minM = Math.min(...vals);
+    const w = 800, h = 120, pad = 20;
+    const pts = vals.map((v, i) => [
+      pad + (i / (vals.length - 1)) * (w - pad * 2),
+      pad + (1 - (v - minM) / (maxM - minM + 1)) * (h - pad * 2)
+    ]);
+    const pathD = pts.map((p, i) => `${i===0?'M':'L'}${p[0]},${p[1]}`).join(' ');
+    const areaD = pathD + ` L${pts[pts.length-1][0]},${h} L${pts[0][0]},${h} Z`;
+    svg.innerHTML = `<defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#c9a84c" stop-opacity="0.3"/><stop offset="100%" stop-color="#c9a84c" stop-opacity="0"/></linearGradient></defs>
+      <path d="${areaD}" fill="url(#ag)"/>
+      <path d="${pathD}" fill="none" stroke="#c9a84c" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+      ${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="3" fill="#c9a84c" opacity="0.8"/><text x="${p[0]}" y="${h-2}" text-anchor="middle" font-size="8" fill="rgba(232,224,208,0.3)" font-family="Noto Sans KR">${recent24[i][0].slice(-2)}월</text>`).join('')}`;
+
+    // Genre
+    const genreSorted = Object.entries(genres).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const maxG = genreSorted[0][1];
+    genreSorted.forEach(([name, cnt], i) => {
+      const div = document.createElement('div');
+      div.className = 'genre-row';
+      div.innerHTML = `<span class="genre-name">${name}</span><div class="genre-track"><div class="genre-fill" style="width:${cnt/maxG*100}%;animation-delay:${i*0.08}s"></div></div><span class="genre-count">${cnt}</span>`;
+      document.getElementById('genreList').appendChild(div);
+    });
+
+    // Heatmap
+    const now = new Date();
+    const maxH = Math.max(...Object.values(monthly));
+    for (let y = now.getFullYear()-2; y <= now.getFullYear(); y++) {
+      const maxMo = y === now.getFullYear() ? now.getMonth()+1 : 12;
+      for (let m = 1; m <= maxMo; m++) {
+        const key = `${y}${String(m).padStart(2,'0')}`;
+        const val = monthly[key] || 0;
+        const alpha = 0.08 + (val/maxH)*0.75;
+        const cell = document.createElement('div');
+        cell.className = 'month-cell';
+        cell.style.background = `rgba(201,168,76,${alpha})`;
+        cell.style.border = `1px solid rgba(201,168,76,${alpha*0.5})`;
+        cell.innerHTML = `<div class="month-tooltip">${y}.${String(m).padStart(2,'0')} · ${val}권</div>`;
+        document.getElementById('heatmap').appendChild(cell);
+      }
+    }
+
+    const updated = new Date().toLocaleString('ko-KR');
+    document.getElementById('footerNote').textContent = `노션 Reading Log 실시간 연동 · 완독 기준 · ${updated} 기준`;
+
+    document.getElementById('loadingArea').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+  } catch(e) {
+    document.getElementById('loadingArea').innerHTML =
+      `<div style="color:#e85d3a;text-align:center;font-size:13px;">데이터 불러오기 실패<br><small style="color:var(--muted);margin-top:8px;display:block">${e.message}</small></div>`;
+  }
+}
+init();
+</script>
+</body>
+</html>
